@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dominó Code: Scratch para Python</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@500;700&family=Fredoka:wght@400;600;700&family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+            user-select: none;
+        }
+
+        .title-font { font-family: 'Fredoka', sans-serif; }
+        .code-font { font-family: 'Fira Code', monospace; }
+
+        /* Estilos dos Blocos Scratch */
+        .scratch-block {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: white;
+            font-size: 0.65rem;
+            font-weight: 700;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 -1px 0 rgba(0, 0, 0, 0.2), 0 1px 3px rgba(0,0,0,0.2);
+            white-space: nowrap;
+            text-shadow: 0 1px 1px rgba(0,0,0,0.3);
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .scratch-input { background-color: #4C97FF; }
+        .scratch-print { background-color: #9966FF; }
+        .scratch-var { background-color: #FF8C1A; }
+        .scratch-list { background-color: #FF6680; }
+        .scratch-if { background-color: #FFAB19; }
+        .scratch-else { background-color: #EC9C12; }
+        .scratch-op { background-color: #59C059; }
+
+        .scratch-slot {
+            background: white;
+            color: #575E75;
+            padding: 0px 4px;
+            border-radius: 8px;
+            margin: 0 2px;
+            font-size: 0.6rem;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
+            display: inline-block;
+        }
+
+        /* Estilos do Código Python */
+        .python-block {
+            background-color: #1e293b;
+            color: #f8fafc;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.65rem;
+            border: 1px solid #334155;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .py-keyword { color: #ff79c6; font-weight: bold; }
+        .py-func { color: #50fa7b; }
+        .py-str { color: #f1fa8c; }
+        .py-num { color: #bd93f9; }
+        .py-var { color: #8be9fd; }
+
+        /* Peça de Dominó */
+        .domino-tile {
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .domino-tile:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.5), 0 0 12px rgba(99, 102, 241, 0.4);
+        }
+
+        .domino-tile.valid-move {
+            border-color: #22c55e !important;
+            box-shadow: 0 0 12px rgba(34, 197, 94, 0.6);
+            animation: pulse-border 1.5s infinite;
+        }
+
+        .domino-tile.hint-highlight {
+            border-color: #f59e0b !important;
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.9), inset 0 0 10px rgba(245, 158, 11, 0.4);
+            animation: pulse-hint 0.8s infinite alternate;
+        }
+
+        @keyframes pulse-border {
+            0%, 100% { border-color: rgba(34, 197, 94, 1); box-shadow: 0 0 12px rgba(34, 197, 94, 0.6); }
+            50% { border-color: rgba(34, 197, 94, 0.4); box-shadow: 0 0 4px rgba(34, 197, 94, 0.2); }
+        }
+
+        @keyframes pulse-hint {
+            0% { transform: scale(1); box-shadow: 0 0 12px rgba(245, 158, 11, 0.7); }
+            100% { transform: scale(1.05); box-shadow: 0 0 22px rgba(245, 158, 11, 1); }
+        }
+
+        .domino-tile.disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            filter: grayscale(30%);
+        }
+
+        .domino-tile.disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        ::-webkit-scrollbar { height: 6px; width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+        .board-endpoint {
+            animation: glow 1.5s infinite alternate;
+        }
+
+        @keyframes glow {
+            from { box-shadow: 0 0 4px #3b82f6, inset 0 0 4px #3b82f6; }
+            to { box-shadow: 0 0 14px #60a5fa, inset 0 0 8px #60a5fa; }
+        }
+
+        .backdrop-blur-custom { backdrop-filter: blur(8px); }
+    </style>
+</head>
+<body class="h-screen text-slate-100 flex flex-col justify-between p-2 max-h-screen">
+
+    <!-- CABEÇALHO -->
+    <header class="max-w-7xl w-full mx-auto bg-slate-800/80 backdrop-blur-md rounded-xl p-2 px-3 border border-slate-700/60 shadow-lg flex justify-between items-center gap-2 flex-shrink-0">
+        <div class="flex items-center gap-2">
+            <div class="bg-gradient-to-tr from-amber-500 to-indigo-600 p-1.5 rounded-lg shadow-md">
+                <i class="fa-solid fa-shapes text-lg text-white"></i>
+            </div>
+            <div>
+                <h1 class="text-base md:text-lg font-bold title-font bg-gradient-to-r from-amber-400 via-purple-300 to-indigo-400 bg-clip-text text-transparent leading-tight">
+                    Dominó Code: Scratch ➔ Python
+                </h1>
+                <p class="text-[10px] text-slate-400 hidden sm:block">Conecte Scratch com Python (Linguagens Opostas obrigatoriamente)!</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button id="btn-help" class="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded-lg text-xs font-bold transition border border-amber-500/40 flex items-center gap-1.5 shadow-sm">
+                <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i>
+                <span>Ajuda</span>
+                <span id="help-counter" class="bg-amber-500 text-slate-900 px-1.5 py-0.2 rounded-full text-[10px] font-extrabold">4</span>
+            </button>
+            <button id="btn-rules" class="px-2 py-1 bg-slate-700/80 hover:bg-slate-600 rounded-lg text-xs font-semibold transition border border-slate-600 flex items-center gap-1 text-slate-300">
+                <i class="fa-solid fa-circle-question text-amber-400"></i> <span class="hidden sm:inline">Regras</span>
+            </button>
+            <button id="btn-sound" class="p-1 px-2 bg-slate-700/80 hover:bg-slate-600 rounded-lg text-xs transition border border-slate-600 text-amber-400">
+                <i class="fa-solid fa-volume-high" id="sound-icon"></i>
+            </button>
+            <button id="btn-restart" class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-xs font-semibold transition shadow-md shadow-indigo-600/30 flex items-center gap-1">
+                <i class="fa-solid fa-rotate-right"></i> <span class="hidden sm:inline">Novo Jogo</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- PLACAR E TURNO -->
+    <section class="max-w-7xl w-full mx-auto my-1.5 grid grid-cols-2 md:grid-cols-4 gap-2 flex-shrink-0">
+        <div class="bg-slate-800/50 rounded-lg p-1.5 border border-slate-700/50 flex items-center gap-2">
+            <div class="w-7 h-7 rounded-full bg-indigo-600/30 border border-indigo-400 flex items-center justify-center text-indigo-400 text-xs">
+                <i class="fa-solid fa-user"></i>
+            </div>
+            <div>
+                <div class="text-[10px] text-slate-400 font-semibold leading-tight">Sua Mão</div>
+                <div class="text-xs font-bold text-indigo-300" id="player-count">7 Peças</div>
+            </div>
+        </div>
+
+        <div class="bg-slate-800/50 rounded-lg p-1.5 border border-slate-700/50 flex items-center gap-2">
+            <div class="w-7 h-7 rounded-full bg-purple-600/30 border border-purple-400 flex items-center justify-center text-purple-400 text-xs">
+                <i class="fa-solid fa-robot"></i>
+            </div>
+            <div>
+                <div class="text-[10px] text-slate-400 font-semibold leading-tight">Oponente Bot</div>
+                <div class="text-xs font-bold text-purple-300" id="bot-count">7 Peças</div>
+            </div>
+        </div>
+
+        <div class="bg-slate-800/50 rounded-lg p-1.5 border border-slate-700/50 flex items-center justify-center gap-2">
+            <div class="w-7 h-7 rounded-full bg-amber-600/30 border border-amber-400 flex items-center justify-center text-amber-400 text-xs">
+                <i class="fa-solid fa-cubes"></i>
+            </div>
+            <div>
+                <div class="text-[10px] text-slate-400 font-semibold leading-tight">Monte de Compra</div>
+                <div class="text-xs font-bold text-amber-300" id="boneyard-count">14 Peças</div>
+            </div>
+        </div>
+
+        <div class="bg-slate-800/50 rounded-lg p-1.5 border border-slate-700/50 flex items-center justify-between">
+            <div>
+                <div class="text-[10px] text-slate-400 font-semibold leading-tight">Vez do Jogo</div>
+                <div class="text-xs font-bold text-emerald-400 flex items-center gap-1.5" id="turn-indicator">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> Seu Turno
+                </div>
+            </div>
+            <button id="btn-draw" class="hidden px-2.5 py-1 bg-amber-600 hover:bg-amber-500 text-[11px] font-bold rounded-lg shadow transition animate-bounce">
+                <i class="fa-solid fa-plus"></i> Comprar
+            </button>
+        </div>
+    </section>
+
+    <!-- ÁREA PRINCIPAL -->
+    <main class="max-w-7xl w-full mx-auto flex-1 flex flex-col gap-1.5 min-h-0">
+        
+        <!-- VISUALIZADOR DE DICAS -->
+        <div id="concept-tooltip" class="bg-indigo-950/60 border border-indigo-500/30 rounded-lg p-1.5 text-xs flex items-center gap-2 text-indigo-200 flex-shrink-0 transition-all">
+            <i class="fa-solid fa-lightbulb text-amber-400 text-sm flex-shrink-0"></i>
+            <div id="tooltip-text" class="truncate text-[11px] md:text-xs">
+                Regra: Conecte <span class="text-blue-400 font-bold">Scratch</span> com <span class="text-emerald-400 font-bold">Python</span> do mesmo conceito. Nunca juntar linguagens iguais!
+            </div>
+        </div>
+
+        <!-- MESA DE JOGO -->
+        <div class="bg-slate-900/90 rounded-xl border border-slate-800 shadow-xl p-2 flex-1 min-h-0 overflow-auto flex items-center justify-start md:justify-center relative" id="board-container">
+            <div id="empty-board-msg" class="text-center text-slate-500 my-auto">
+                <i class="fa-solid fa-hand-pointer text-2xl mb-1 text-slate-600"></i>
+                <p class="text-xs font-semibold">Escolha qualquer peça da sua mão para começar a mesa!</p>
+            </div>
+
+            <div id="domino-chain" class="flex items-center gap-1.5 p-2 min-w-max">
+                <!-- Peças na mesa -->
+            </div>
+        </div>
+
+        <!-- MÃO DO BOT -->
+        <div class="flex justify-center items-center gap-1 py-0.5 opacity-75 flex-shrink-0">
+            <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider mr-1">Mão do Bot:</span>
+            <div id="bot-hand-tiles" class="flex gap-1"></div>
+        </div>
+
+        <!-- MÃO DO JOGADOR -->
+        <div class="bg-slate-800/80 rounded-xl border border-slate-700/80 p-2 shadow-lg flex-shrink-0">
+            <div class="flex justify-between items-center mb-1 px-1">
+                <span class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <i class="fa-solid fa-hand text-indigo-400"></i> Sua Mão de Peças
+                </span>
+                <span class="text-[11px] text-slate-400 truncate max-w-[60%]" id="player-status-hint">Clique numa peça destacada para jogar.</span>
+            </div>
+
+            <div id="player-hand" class="flex gap-2 overflow-x-auto pb-1 pt-0.5 px-0.5 min-h-[85px] items-center">
+                <!-- Peças do jogador -->
+            </div>
+        </div>
+    </main>
+
+    <!-- FOOTER / LOG -->
+    <footer class="max-w-7xl w-full mx-auto mt-1 bg-slate-900/60 rounded-lg p-1 px-2 border border-slate-800 text-[11px] flex items-center justify-between gap-2 flex-shrink-0">
+        <div class="flex items-center gap-1.5 text-slate-400 truncate">
+            <i class="fa-solid fa-clock-rotate-left text-indigo-400"></i>
+            <span class="font-semibold">Ação:</span>
+            <span id="last-action" class="text-slate-200 truncate">Aguardando início...</span>
+        </div>
+        <div class="text-slate-500 text-[10px] hidden sm:block flex-shrink-0">
+            Scratch ⟷ Python • Dominó Educativo
+        </div>
+    </footer>
+
+    <!-- MODAL FIM DE JOGO -->
+    <div id="game-over-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-custom z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-5 text-center shadow-2xl relative transform transition-all scale-95 opacity-0" id="modal-card">
+            <div id="modal-icon" class="w-16 h-16 rounded-full mx-auto flex items-center justify-center text-3xl mb-3 shadow-lg"></div>
+            <h2 id="modal-title" class="text-xl font-bold title-font mb-1">Fim de Jogo!</h2>
+            <p id="modal-desc" class="text-slate-300 text-xs mb-4"></p>
+            
+            <div class="bg-slate-900/70 rounded-xl p-3 mb-4 border border-slate-700/50 text-left text-xs space-y-1.5">
+                <div class="flex justify-between text-slate-400">
+                    <span>Peças Restantes (Sua Mão):</span>
+                    <span id="stat-player-left" class="font-bold text-white">0</span>
+                </div>
+                <div class="flex justify-between text-slate-400">
+                    <span>Peças Restantes (Bot):</span>
+                    <span id="stat-bot-left" class="font-bold text-white">0</span>
+                </div>
+                <div class="flex justify-between text-slate-400">
+                    <span>Total de Jogadas:</span>
+                    <span id="stat-total-moves" class="font-bold text-white">0</span>
+                </div>
+            </div>
+
+            <button id="btn-modal-restart" class="w-full py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 font-bold text-white text-xs rounded-xl shadow-lg transition">
+                Jogar Novamente
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL REGRAS -->
+    <div id="rules-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-custom z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-lg w-full p-5 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button id="btn-close-rules" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            
+            <h2 class="text-lg font-bold title-font mb-3 text-amber-400 flex items-center gap-2">
+                <i class="fa-solid fa-gamepad"></i> Regras de Encaixe Rigoroso
+            </h2>
+
+            <div class="space-y-3 text-xs text-slate-300 leading-relaxed">
+                <div class="bg-indigo-900/40 p-2.5 rounded-xl border border-indigo-500/30">
+                    <h3 class="font-bold text-indigo-300 mb-1">⚡ Regra de Ouro de Conexão:</h3>
+                    <p>Você <strong>DEVE</strong> conectar extremidades do <strong>mesmo conceito</strong>, mas com <strong>linguagens DIFERENTES</strong>!</p>
+                    <p class="mt-1 text-amber-300 font-semibold">• [Scratch: input] ⟷ [Python: input] (CORRETO)</p>
+                    <p class="text-rose-400 font-semibold">• [Scratch: input] ⟷ [Scratch: input] (PROIBIDO)</p>
+                    <p class="text-rose-400 font-semibold">• [Python: input] ⟷ [Python: input] (PROIBIDO)</p>
+                </div>
+
+                <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-700 space-y-1">
+                    <h3 class="font-bold text-amber-300">💡 Recursos:</h3>
+                    <ul class="list-disc list-inside space-y-0.5 text-slate-300">
+                        <li>Use o botão <strong>Ajuda (4x)</strong> para o jogo indicar a peça exata e o lado da mesa.</li>
+                        <li>Se não puder jogar, use <strong>Comprar</strong>.</li>
+                        <li>Vence quem esvaziar a mão primeiro!</li>
+                    </ul>
+                </div>
+            </div>
+
+            <button id="btn-understood" class="w-full mt-4 py-2 bg-slate-700 hover:bg-slate-600 font-bold text-white text-xs rounded-xl transition">
+                Entendi! Vamos Jogar
+            </button>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT DO JOGO -->
+    <script>
+        // --- CONCEITOS E METADADOS ---
+        const CONCEPTS = {
+            input: { name: 'Input', color: 'scratch-input', badge: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
+            print: { name: 'Print', color: 'scratch-print', badge: 'bg-purple-500/20 text-purple-300 border-purple-500/40' },
+            variavel: { name: 'Variável', color: 'scratch-var', badge: 'bg-orange-500/20 text-orange-300 border-orange-500/40' },
+            listas: { name: 'Listas', color: 'scratch-list', badge: 'bg-pink-500/20 text-pink-300 border-pink-500/40' },
+            if: { name: 'Se (If)', color: 'scratch-if', badge: 'bg-amber-500/20 text-amber-300 border-amber-500/40' },
+            else: { name: 'Senão (Else)', color: 'scratch-else', badge: 'bg-amber-600/20 text-amber-400 border-amber-600/40' },
+            operadores: { name: 'Operadores', color: 'scratch-op', badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' }
+        };
+
+        const TEMPLATES = {
+            input: {
+                scratch: `<div class="scratch-block scratch-input">pergunte <span class="scratch-slot">Nome?</span></div>`,
+                python: `<div class="python-block code-font"><span class="py-var">n</span> = <span class="py-func">input</span>()</div>`,
+                desc: 'Entrada de dados do usuário.'
+            },
+            print: {
+                scratch: `<div class="scratch-block scratch-print">mostre <span class="scratch-slot">Olá!</span></div>`,
+                python: `<div class="python-block code-font"><span class="py-func">print</span>(<span class="py-str">'Olá!'</span>)</div>`,
+                desc: 'Exibição de texto ou saída de dados.'
+            },
+            variavel: {
+                scratch: `<div class="scratch-block scratch-var">mude <span class="scratch-slot">x</span> para <span class="scratch-slot">10</span></div>`,
+                python: `<div class="python-block code-font"><span class="py-var">x</span> = <span class="py-num">10</span></div>`,
+                desc: 'Atribuição e armazenamento de valor.'
+            },
+            listas: {
+                scratch: `<div class="scratch-block scratch-list">add <span class="scratch-slot">item</span> em <span class="scratch-slot">lst</span></div>`,
+                python: `<div class="python-block code-font"><span class="py-var">lst</span>.<span class="py-func">append</span>()</div>`,
+                desc: 'Inclusão de elemento em uma lista.'
+            },
+            if: {
+                scratch: `<div class="scratch-block scratch-if">se <span class="scratch-slot">x > 5</span> então</div>`,
+                python: `<div class="python-block code-font"><span class="py-keyword">if</span> <span class="py-var">x</span> > <span class="py-num">5</span>:</div>`,
+                desc: 'Estrutura condicional de verificação.'
+            },
+            else: {
+                scratch: `<div class="scratch-block scratch-else">senão</div>`,
+                python: `<div class="python-block code-font"><span class="py-keyword">else</span>:</div>`,
+                desc: 'Ramo alternativo do fluxo condicional.'
+            },
+            operadores: {
+                scratch: `<div class="scratch-block scratch-op"><span class="scratch-slot">a</span> + <span class="scratch-slot">b</span></div>`,
+                python: `<div class="python-block code-font"><span class="py-var">a</span> + <span class="py-var">b</span></div>`,
+                desc: 'Operação matemática ou lógica.'
+            }
+        };
+
+        // --- ESTADO DO JOGO ---
+        let deck = [];
+        let playerHand = [];
+        let botHand = [];
+        let boneyard = [];
+        let boardChain = [];
+        let currentTurn = 'player';
+        let soundEnabled = true;
+        let totalMoves = 0;
+        let helpCounter = 4;
+        let highlightedIndices = [];
+
+        // --- SINTETIZADOR DE ÁUDIO ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                const now = audioCtx.currentTime;
+
+                if (type === 'play') {
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.exponentialRampToValueAtTime(600, now + 0.1);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                    osc.start(now); osc.stop(now + 0.1);
+                } else if (type === 'draw') {
+                    osc.frequency.setValueAtTime(400, now);
+                    osc.frequency.exponentialRampToValueAtTime(250, now + 0.08);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+                    osc.start(now); osc.stop(now + 0.08);
+                } else if (type === 'hint') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, now);
+                    osc.frequency.setValueAtTime(659.25, now + 0.08);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now); osc.stop(now + 0.25);
+                } else if (type === 'win') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(440, now);
+                    osc.frequency.setValueAtTime(880, now + 0.25);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                    osc.start(now); osc.stop(now + 0.4);
+                } else if (type === 'error') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(180, now);
+                    osc.frequency.setValueAtTime(120, now + 0.12);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+                    osc.start(now); osc.stop(now + 0.12);
+                }
+            } catch (e) {}
+        }
+
+        // --- GERADOR DE DOMINÓ (28 PEÇAS) ---
+        function generateDeck() {
+            const conceptList = Object.keys(CONCEPTS);
+            let fullDeck = [];
+            let idCounter = 1;
+
+            for (let i = 0; i < conceptList.length; i++) {
+                for (let j = i; j < conceptList.length; j++) {
+                    const conceptA = conceptList[i];
+                    const conceptB = conceptList[j];
+
+                    // Alternamos a orientação para equilibrar Scratch e Python nos lados A e B
+                    const isFlippedLang = (i + j) % 2 === 1;
+                    const langA = isFlippedLang ? 'python' : 'scratch';
+                    const langB = isFlippedLang ? 'scratch' : 'python';
+
+                    fullDeck.push({
+                        id: idCounter++,
+                        sideA: {
+                            concept: conceptA,
+                            lang: langA,
+                            html: TEMPLATES[conceptA][langA],
+                            desc: TEMPLATES[conceptA].desc
+                        },
+                        sideB: {
+                            concept: conceptB,
+                            lang: langB,
+                            html: TEMPLATES[conceptB][langB],
+                            desc: TEMPLATES[conceptB].desc
+                        },
+                        isDouble: conceptA === conceptB
+                    });
+                }
+            }
+
+            return fullDeck.sort(() => Math.random() - 0.5);
+        }
+
+        function initGame() {
+            deck = generateDeck();
+            playerHand = deck.splice(0, 7);
+            botHand = deck.splice(0, 7);
+            boneyard = deck;
+            boardChain = [];
+            currentTurn = 'player';
+            totalMoves = 0;
+            helpCounter = 4;
+            highlightedIndices = [];
+
+            updateHelpButton();
+            updateUI();
+            logAction("Jogo iniciado! Sua vez de jogar.");
+        }
+
+        // --- OBTÉM AS EXTREMIDADES LIVRES DA MESA ---
+        function getBoardEndpoints() {
+            if (boardChain.length === 0) return { left: null, right: null };
+
+            const firstNode = boardChain[0];
+            const lastNode = boardChain[boardChain.length - 1];
+
+            // A ponta esquerda da mesa é o lado exterior da primeira peça
+            const leftEnd = firstNode.isFlipped ? firstNode.tile.sideB : firstNode.tile.sideA;
+
+            // A ponta direita da mesa é o lado exterior da última peça
+            const rightEnd = lastNode.isFlipped ? lastNode.tile.sideA : lastNode.tile.sideB;
+
+            return { left: leftEnd, right: rightEnd };
+        }
+
+        // --- VALIDAÇÃO RÍGIDA: MESMO CONCEITO + LINGUAGENS DIFERENTES ---
+        function matchSides(endpoint, tileSide) {
+            if (!endpoint || !tileSide) return false;
+            return (endpoint.concept === tileSide.concept) && (endpoint.lang !== tileSide.lang);
+        }
+
+        function getValidPlacements(tile) {
+            if (boardChain.length === 0) {
+                return { canPlayLeft: true, canPlayRight: true, flipLeft: false, flipRight: false };
+            }
+
+            const { left, right } = getBoardEndpoints();
+
+            // Para encaixar no lado ESQUERDO da mesa, a peça precisa encostar seu lado interior no 'left'.
+            // O lado que encosta no 'left' deve satisfazer matchSides(left, side).
+            let canPlayLeft = false, flipLeft = false;
+            let canPlayRight = false, flipRight = false;
+
+            // Tentando encaixar SideB no Left (SideA fica para fora) -> Não Inverte (isFlipped = false)
+            if (matchSides(left, tile.sideB)) {
+                canPlayLeft = true;
+                flipLeft = false;
+            } 
+            // Tentando encaixar SideA no Left (SideB fica para fora) -> Inverte (isFlipped = true)
+            else if (matchSides(left, tile.sideA)) {
+                canPlayLeft = true;
+                flipLeft = true;
+            }
+
+            // Tentando encaixar SideA no Right (SideB fica para fora) -> Não Inverte (isFlipped = false)
+            if (matchSides(right, tile.sideA)) {
+                canPlayRight = true;
+                flipRight = false;
+            } 
+            // Tentando encaixar SideB no Right (SideA fica para fora) -> Inverte (isFlipped = true)
+            else if (matchSides(right, tile.sideB)) {
+                canPlayRight = true;
+                flipRight = true;
+            }
+
+            return { canPlayLeft, canPlayRight, flipLeft, flipRight };
+        }
+
+        // --- AJUDA / DICAS ---
+        function useHelp() {
+            if (currentTurn !== 'player' || helpCounter <= 0) return;
+
+            highlightedIndices = [];
+            let validMovesInfo = [];
+
+            playerHand.forEach((tile, index) => {
+                const placement = getValidPlacements(tile);
+                if (placement.canPlayLeft || placement.canPlayRight) {
+                    highlightedIndices.push(index);
+
+                    let sides = [];
+                    if (placement.canPlayLeft) sides.push("ponta esquerda");
+                    if (placement.canPlayRight) sides.push("ponta direita");
+
+                    const catName = CONCEPTS[tile.sideA.concept]?.name || tile.sideA.concept;
+                    validMovesInfo.push(`Peça de [${catName}] ➔ na ${sides.join(" ou ")}`);
+                }
+            });
+
+            if (highlightedIndices.length > 0) {
+                helpCounter--;
+                updateHelpButton();
+                playSound('hint');
+
+                const statusHint = document.getElementById('player-status-hint');
+                statusHint.innerHTML = `<span class="text-amber-300 font-bold"><i class="fa-solid fa-wand-magic-sparkles"></i> Dica:</span> Jogue a peça destacada (${validMovesInfo[0]})!`;
+                logAction(`Ajuda usada! (${helpCounter} restantes). Dica ativada.`);
+
+                updateUI();
+
+                setTimeout(() => {
+                    highlightedIndices = [];
+                    updateUI();
+                }, 5000);
+            } else {
+                playSound('error');
+                if (boneyard.length > 0) {
+                    logAction("Ajuda: Nenhuma peça encaixa agora. Clique em 'Comprar'!");
+                    document.getElementById('player-status-hint').textContent = "Dica: Compre uma peça no Monte para continuar!";
+                } else {
+                    logAction("Ajuda: Sem jogadas possíveis e monte vazio. Você precisará passar a vez.");
+                }
+            }
+        }
+
+        function updateHelpButton() {
+            const btnHelp = document.getElementById('btn-help');
+            const counterEl = document.getElementById('help-counter');
+            counterEl.textContent = helpCounter;
+
+            if (helpCounter <= 0) {
+                btnHelp.classList.add('opacity-50', 'cursor-not-allowed');
+                btnHelp.classList.remove('hover:bg-amber-500/30');
+            } else {
+                btnHelp.classList.remove('opacity-50', 'cursor-not-allowed');
+                btnHelp.classList.add('hover:bg-amber-500/30');
+            }
+        }
+
+        // --- EXECUÇÃO DE JOGADAS ---
+        function playTile(player, tileIndex, side = 'right') {
+            const hand = player === 'player' ? playerHand : botHand;
+            const tile = hand[tileIndex];
+            const placement = getValidPlacements(tile);
+
+            if (boardChain.length > 0) {
+                if (side === 'left' && !placement.canPlayLeft) return false;
+                if (side === 'right' && !placement.canPlayRight) return false;
+            }
+
+            highlightedIndices = [];
+            hand.splice(tileIndex, 1);
+
+            let isFlipped = false;
+
+            if (boardChain.length === 0) {
+                boardChain.push({ tile, isFlipped: false });
+            } else if (side === 'left') {
+                isFlipped = placement.flipLeft;
+                boardChain.unshift({ tile, isFlipped });
+            } else {
+                isFlipped = placement.flipRight;
+                boardChain.push({ tile, isFlipped });
+            }
+
+            totalMoves++;
+            playSound('play');
+
+            const catName = CONCEPTS[tile.sideA.concept]?.name || tile.sideA.concept;
+            logAction(`${player === 'player' ? 'Você' : 'Bot'} jogou uma peça de [${catName}].`);
+
+            if (checkGameOver()) return true;
+
+            currentTurn = player === 'player' ? 'bot' : 'player';
+            updateUI();
+
+            if (currentTurn === 'bot') {
+                setTimeout(botTurn, 1000);
+            }
+
+            return true;
+        }
+
+        function drawFromBoneyard(player) {
+            if (boneyard.length === 0) return false;
+
+            const drawnTile = boneyard.pop();
+            const hand = player === 'player' ? playerHand : botHand;
+            hand.push(drawnTile);
+
+            highlightedIndices = [];
+            playSound('draw');
+            logAction(`${player === 'player' ? 'Você' : 'O Bot'} comprou uma peça do monte.`);
+
+            updateUI();
+            checkGameOver();
+
+            return true;
+        }
+
+        function botTurn() {
+            if (currentTurn !== 'bot') return;
+
+            let validMoves = [];
+
+            botHand.forEach((tile, index) => {
+                const placement = getValidPlacements(tile);
+                if (placement.canPlayLeft) validMoves.push({ index, side: 'left' });
+                if (placement.canPlayRight) validMoves.push({ index, side: 'right' });
+            });
+
+            if (validMoves.length > 0) {
+                const doubleMove = validMoves.find(m => botHand[m.index].isDouble);
+                const chosenMove = doubleMove || validMoves[Math.floor(Math.random() * validMoves.length)];
+                playTile('bot', chosenMove.index, chosenMove.side);
+            } else {
+                if (boneyard.length > 0) {
+                    drawFromBoneyard('bot');
+                    setTimeout(botTurn, 800);
+                } else {
+                    logAction("O Bot não possui jogadas válidas. Passou a vez.");
+                    currentTurn = 'player';
+                    updateUI();
+                    checkGameOver();
+                }
+            }
+        }
+
+        function checkGameOver() {
+            let winner = null;
+            let reason = '';
+
+            if (playerHand.length === 0) {
+                winner = 'player';
+                reason = 'Parabéns! Você colocou todas as suas peças na mesa!';
+            } else if (botHand.length === 0) {
+                winner = 'bot';
+                reason = 'O Bot bateu e colocou todas as peças primeiro!';
+            } else if (boneyard.length === 0) {
+                const playerCanPlay = playerHand.some(t => getValidPlacements(t).canPlayLeft || getValidPlacements(t).canPlayRight);
+                const botCanPlay = botHand.some(t => getValidPlacements(t).canPlayLeft || getValidPlacements(t).canPlayRight);
+
+                if (!playerCanPlay && !botCanPlay) {
+                    if (playerHand.length < botHand.length) {
+                        winner = 'player';
+                        reason = 'Jogo fechado! Você venceu por ter menos peças sobrando.';
+                    } else if (botHand.length < playerHand.length) {
+                        winner = 'bot';
+                        reason = 'Jogo fechado! O Bot venceu por ter menos peças sobrando.';
+                    } else {
+                        winner = 'draw';
+                        reason = 'Jogo fechado em empate exato de peças!';
+                    }
+                }
+            }
+
+            if (winner) {
+                showGameOverModal(winner, reason);
+                return true;
+            }
+
+            return false;
+        }
+
+        function showGameOverModal(winner, reason) {
+            const modal = document.getElementById('game-over-modal');
+            const modalCard = document.getElementById('modal-card');
+            const iconContainer = document.getElementById('modal-icon');
+            const titleEl = document.getElementById('modal-title');
+            const descEl = document.getElementById('modal-desc');
+
+            document.getElementById('stat-player-left').textContent = `${playerHand.length} peças`;
+            document.getElementById('stat-bot-left').textContent = `${botHand.length} peças`;
+            document.getElementById('stat-total-moves').textContent = totalMoves;
+
+            if (winner === 'player') {
+                playSound('win');
+                iconContainer.className = "w-16 h-16 rounded-full mx-auto flex items-center justify-center text-3xl mb-3 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-lg shadow-emerald-500/20";
+                iconContainer.innerHTML = `<i class="fa-solid fa-trophy"></i>`;
+                titleEl.className = "text-xl font-bold title-font mb-1 text-emerald-400";
+                titleEl.textContent = "Excelente Vitória!";
+            } else if (winner === 'bot') {
+                playSound('error');
+                iconContainer.className = "w-16 h-16 rounded-full mx-auto flex items-center justify-center text-3xl mb-3 bg-rose-500/20 text-rose-400 border border-rose-500/40 shadow-lg shadow-rose-500/20";
+                iconContainer.innerHTML = `<i class="fa-solid fa-robot"></i>`;
+                titleEl.className = "text-xl font-bold title-font mb-1 text-rose-400";
+                titleEl.textContent = "Vitória do Bot!";
+            } else {
+                iconContainer.className = "w-16 h-16 rounded-full mx-auto flex items-center justify-center text-3xl mb-3 bg-amber-500/20 text-amber-400 border border-amber-500/40 shadow-lg shadow-amber-500/20";
+                iconContainer.innerHTML = `<i class="fa-solid fa-handshake"></i>`;
+                titleEl.className = "text-xl font-bold title-font mb-1 text-amber-400";
+                titleEl.textContent = "Empate Técnico!";
+            }
+
+            descEl.textContent = reason;
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modalCard.classList.remove('scale-95', 'opacity-0');
+                modalCard.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        // --- RENDERIZAÇÃO DAS PEÇAS ---
+        function renderTileSideHTML(side) {
+            const isScratch = side.lang === 'scratch';
+            const langBadge = isScratch 
+                ? 'bg-blue-600/30 text-blue-300 border-blue-500/50' 
+                : 'bg-emerald-600/30 text-emerald-300 border-emerald-500/50';
+
+            return `
+                <div class="flex-1 flex flex-col items-center justify-center gap-0.5">
+                    <span class="text-[8px] font-bold px-1 py-0.2 rounded border ${langBadge} uppercase tracking-wider">
+                        ${side.lang}
+                    </span>
+                    <div class="w-full flex justify-center py-0.5">
+                        ${side.html}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderDominoTileHTML(tile, isFlipped = false, interactive = false, isValid = false, isHinted = false) {
+            const leftSide = isFlipped ? tile.sideB : tile.sideA;
+            const rightSide = isFlipped ? tile.sideA : tile.sideB;
+
+            return `
+                <div class="domino-tile bg-slate-800 border-2 border-slate-600 rounded-lg p-1.5 flex items-center gap-1.5 shadow-md min-w-[170px] md:min-w-[190px] select-none ${isHinted ? 'hint-highlight' : (isValid ? 'valid-move' : '')} ${!interactive ? 'cursor-default' : ''}">
+                    ${renderTileSideHTML(leftSide)}
+                    <div class="w-0.5 h-8 bg-slate-600 rounded-full flex flex-col justify-between py-0.5">
+                        <div class="w-0.5 h-0.5 bg-slate-400 rounded-full"></div>
+                        <div class="w-0.5 h-0.5 bg-slate-400 rounded-full"></div>
+                    </div>
+                    ${renderTileSideHTML(rightSide)}
+                </div>
+            `;
+        }
+
+        function updateUI() {
+            document.getElementById('player-count').textContent = `${playerHand.length} Peças`;
+            document.getElementById('bot-count').textContent = `${botHand.length} Peças`;
+            document.getElementById('boneyard-count').textContent = `${boneyard.length} Peças`;
+
+            const turnInd = document.getElementById('turn-indicator');
+            const btnDraw = document.getElementById('btn-draw');
+
+            const playerValidMoves = playerHand.filter(t => {
+                const p = getValidPlacements(t);
+                return p.canPlayLeft || p.canPlayRight;
+            });
+
+            if (currentTurn === 'player') {
+                turnInd.className = "text-xs font-bold text-emerald-400 flex items-center gap-1.5";
+                turnInd.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> Seu Turno`;
+
+                if (playerValidMoves.length === 0 && boneyard.length > 0) {
+                    btnDraw.classList.remove('hidden');
+                    if (highlightedIndices.length === 0) {
+                        document.getElementById('player-status-hint').textContent = "Sem jogadas válidas. Compre uma peça no Monte!";
+                    }
+                } else {
+                    btnDraw.classList.add('hidden');
+                    if (highlightedIndices.length === 0) {
+                        document.getElementById('player-status-hint').textContent = "Clique em uma peça destacada para jogar.";
+                    }
+                }
+            } else {
+                turnInd.className = "text-xs font-bold text-purple-400 flex items-center gap-1.5";
+                turnInd.innerHTML = `<span class="w-2 h-2 rounded-full bg-purple-400 animate-ping"></span> O Bot está pensando...`;
+                btnDraw.classList.add('hidden');
+            }
+
+            // Tabuleiro
+            const boardContainer = document.getElementById('domino-chain');
+            const emptyMsg = document.getElementById('empty-board-msg');
+
+            if (boardChain.length === 0) {
+                emptyMsg.classList.remove('hidden');
+                boardContainer.innerHTML = '';
+            } else {
+                emptyMsg.classList.add('hidden');
+                boardContainer.innerHTML = boardChain.map((item, index) => {
+                    const isEndpoints = index === 0 || index === boardChain.length - 1;
+                    return `
+                        <div class="relative flex items-center ${isEndpoints ? 'board-endpoint rounded-lg' : ''}">
+                            ${renderDominoTileHTML(item.tile, item.isFlipped, false)}
+                        </div>
+                    `;
+                }).join('<div class="text-indigo-400 font-extrabold text-xs px-0.5"><i class="fa-solid fa-link"></i></div>');
+            }
+
+            // Mão do Bot
+            const botHandContainer = document.getElementById('bot-hand-tiles');
+            botHandContainer.innerHTML = botHand.map(() => `
+                <div class="w-5 h-8 bg-slate-700 border border-slate-600 rounded flex items-center justify-center shadow-sm">
+                    <i class="fa-solid fa-code text-slate-500 text-[9px]"></i>
+                </div>
+            `).join('');
+
+            // Mão do Jogador
+            const playerHandContainer = document.getElementById('player-hand');
+            playerHandContainer.innerHTML = playerHand.map((tile, idx) => {
+                const placement = getValidPlacements(tile);
+                const isValid = currentTurn === 'player' && (placement.canPlayLeft || placement.canPlayRight);
+                const isHinted = highlightedIndices.includes(idx);
+
+                return `
+                    <div class="player-tile-wrapper transition transform ${!isValid && currentTurn === 'player' ? 'disabled' : ''}" 
+                         data-index="${idx}" 
+                         onmouseenter="showTileTooltip(${idx})"
+                         onclick="handleTileClick(${idx})">
+                        ${renderDominoTileHTML(tile, false, true, isValid, isHinted)}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        window.showTileTooltip = function(index) {
+            const tile = playerHand[index];
+            if (!tile) return;
+
+            const tooltip = document.getElementById('tooltip-text');
+            tooltip.innerHTML = `
+                Lado A: <strong>${tile.sideA.lang.toUpperCase()}</strong> (${tile.sideA.concept}) | Lado B: <strong>${tile.sideB.lang.toUpperCase()}</strong> (${tile.sideB.concept})
+            `;
+        };
+
+        window.handleTileClick = function(index) {
+            if (currentTurn !== 'player') return;
+
+            const tile = playerHand[index];
+            const placement = getValidPlacements(tile);
+
+            if (!placement.canPlayLeft && !placement.canPlayRight && boardChain.length > 0) {
+                playSound('error');
+                logAction("Esta peça não se conecta às pontas livres da mesa!");
+                return;
+            }
+
+            if (placement.canPlayLeft && placement.canPlayRight && boardChain.length > 0) {
+                const side = confirm("Conectar no Lado Esquerdo do tabuleiro? (Clique OK para Esquerda, Cancelar para Direita)") ? 'left' : 'right';
+                playTile('player', index, side);
+            } else if (placement.canPlayLeft) {
+                playTile('player', index, 'left');
+            } else {
+                playTile('player', index, 'right');
+            }
+        };
+
+        function logAction(msg) {
+            document.getElementById('last-action').textContent = msg;
+        }
+
+        // --- LISTENERS ---
+        document.getElementById('btn-help').addEventListener('click', useHelp);
+        document.getElementById('btn-draw').addEventListener('click', () => {
+            if (currentTurn === 'player') drawFromBoneyard('player');
+        });
+
+        document.getElementById('btn-restart').addEventListener('click', initGame);
+        document.getElementById('btn-modal-restart').addEventListener('click', () => {
+            document.getElementById('game-over-modal').classList.add('hidden');
+            initGame();
+        });
+
+        const rulesModal = document.getElementById('rules-modal');
+        document.getElementById('btn-rules').addEventListener('click', () => rulesModal.classList.remove('hidden'));
+        document.getElementById('btn-close-rules').addEventListener('click', () => rulesModal.classList.add('hidden'));
+        document.getElementById('btn-understood').addEventListener('click', () => rulesModal.classList.add('hidden'));
+
+        document.getElementById('btn-sound').addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('sound-icon');
+            icon.className = soundEnabled ? "fa-solid fa-volume-high" : "fa-solid fa-volume-xmark text-slate-500";
+        });
+
+        window.onload = function() {
+            initGame();
+        };
+    </script>
+</body>
+</html>
